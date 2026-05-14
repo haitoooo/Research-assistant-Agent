@@ -1,319 +1,120 @@
-![cover-v5-optimized](./images/GitHub_README.png)
+# Research Assistant Agent
 
-<div align="center">
-  <p>
-    <a href="https://pypi.org/project/nanobot-ai/"><img src="https://img.shields.io/pypi/v/nanobot-ai" alt="PyPI"></a>
-    <a href="https://pepy.tech/project/nanobot-ai"><img src="https://static.pepy.tech/badge/nanobot-ai" alt="Downloads"></a>
-    <img src="https://img.shields.io/badge/python-≥3.11-blue" alt="Python">
-    <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-    <a href="https://github.com/HKUDS/nanobot/graphs/commit-activity" target="_blank">
-        <img alt="Commits last month" src="https://img.shields.io/github/commit-activity/m/HKUDS/nanobot?labelColor=%20%2332b583&color=%20%2312b76a"></a>
-    <a href="https://github.com/HKUDS/nanobot/issues?q=is%3Aissue%20is%3Aclosed" target="_blank">
-        <img alt="Issues closed" src="https://img.shields.io/github/issues-search?query=repo%3AHKUDS%2Fnanobot%20is%3Aissue%20is%3Aclosed&label=issues%20closed&labelColor=%20%237d89b0&color=%20%235d6b98"></a>
-    <a href="https://twitter.com/intent/follow?screen_name=nanobot_project" target="_blank">
-        <img src="https://img.shields.io/twitter/follow/nanobot_project?logo=X&color=%20%23f5f5f5" alt="follow on X(Twitter)"></a>
-    <a href="https://nanobot.wiki/docs/latest/getting-started/nanobot-overview"><img src="https://img.shields.io/badge/Docs-nanobot.wiki-blue?style=flat&logo=readthedocs&logoColor=white" alt="Docs"></a>
-    <a href="./COMMUNICATION.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat&logo=feishu&logoColor=white" alt="Feishu"></a>
-    <a href="./COMMUNICATION.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat&logo=wechat&logoColor=white" alt="WeChat"></a>
-    <a href="https://discord.gg/MnCvHqpUGB"><img src="https://img.shields.io/badge/Discord-Community-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord"></a>
-  </p>
-</div>
+这是一个面向个人科研工作的长期运行 Agent。目标不是做通用聊天机器人，而是把论文跟踪、实验记录、报告生成、用户偏好和 GPU 空闲监控串成一套可持续使用的研究工作流。
 
-🐈 **nanobot** is an open-source and ultra-lightweight AI agent in the spirit of [OpenClaw](https://github.com/openclaw/openclaw), [Claude Code](https://www.anthropic.com/claude-code), and [Codex](https://www.openai.com/codex/). It keeps the core agent loop small and readable while still supporting chat channels, memory, MCP and practical deployment paths, so you can go from local setup to a long-running personal agent with minimal overhead.
+当前仓库保留 Python Agent 核心、记忆、计划任务、heartbeat、文件工具、搜索/文档处理和报告生成所需依赖；旧的 WebUI、通用文档、测试、CI、Docker 和外围聊天桥接内容已清理。
 
-## 📢 News
+## 目标能力
 
-- **2026-04-29** 🚀 Released **v0.1.5.post3** — Smarter threads on Feishu, Discord, Slack, and Teams; **DeepSeek-V4**; Hugging Face & Olostep; choices, `/history`, and steadier long chats. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.5.post3) for details.
-- **2026-04-28** 🌐 Olostep web search, Hugging Face provider, safer workspace-tool interruptions.
-- **2026-04-27** 💬 `/history` command, smarter session replay caps, smoother Discord / Slack threads.
-- **2026-04-26** 🧭 Natural cron reminders, thread-aware restarts, safer local provider and shell behavior.
-- **2026-04-25** 🧩 `ask_user` choices, macOS LaunchAgent deployment, MSTeams stale-reference cleanup.
-- **2026-04-24** 🎥 Video attachments for channels, DeepSeek thinking control, faster document startup.
-- **2026-04-23** 🧵 Discord thread sessions, Telegram inline buttons, structured tool progress updates.
-- **2026-04-22** 🔎 GitHub Copilot GPT-5 / o-series support, configurable web fetch, WebUI image uploads.
-- **2026-04-21** 🚀 Released **v0.1.5.post2** — Windows & Python 3.14 support, Office document reading, SSE streaming for the OpenAI-compatible API, and stronger reliability across sessions, memory, and channels. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.5.post2) for details.
-- **2026-04-20** 🎨 Kimi K2.6 support, Telegram long-message split, WebUI typography & dark-mode polish.
-- **2026-04-19** 🌐 WebUI i18n locale switcher, atomic session writes with auto-repair.
-- **2026-04-18** 🧪 Initial WebUI chat, smarter setup wizard menus, WebSocket multi-chat multiplexing.
-- **2026-04-17** 🪟 Windows & Python 3.14 CI, Dream line-age memory, email self-loop guard.
-- **2026-04-16** 📡 SSE streaming for OpenAI-compatible API, Discord channel allow-list.
-- **2026-04-15** 🎛️ LM Studio & nullable API keys, MiniMax thinking endpoint, runtime SelfTool.
-- **2026-04-14** 🚀 Released **v0.1.5.post1** — Dream skill discovery, mid-turn follow-up injection, WebSocket channel, and deeper channel integrations. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.5.post1) for details.
-- **2026-04-13** 🛡️ Agent turn hardened — user messages persisted early, auto-compact skips active tasks.
-- **2026-04-12** 🔒 Lark global domain support, Dream learns discovered skills, shell sandbox tightened.
-- **2026-04-11** ⚡ Context compact shrinks sessions on the fly; Kagi web search; QQ & WeCom full media.
+### 1. 论文读取与去重
 
-<details>
-<summary>Earlier news</summary>
+- 定期读取与你研究方向相关的最新论文。
+- 抽取论文标题、作者、机构、链接、摘要、方法、实验设置、主要结论和局限。
+- 使用本地数据库缓存已读论文，避免重复阅读和重复汇报。
+- 支持按主题生成每日/每周论文简报。
 
-- **2026-04-10** 📓 Notebook editing tool, multiple MCP servers, Feishu streaming & done-emoji.
-- **2026-04-09** 🔌 WebSocket channel, unified cross-channel session, `disabled_skills` config.
-- **2026-04-08** 📤 API file uploads, OpenAI reasoning auto-routing with Responses fallback.
-- **2026-04-07** 🧠 Anthropic adaptive thinking, MCP resources & prompts exposed as tools.
-- **2026-04-06** 🛰️ Langfuse observability, unified Whisper transcription, email attachments.
-- **2026-04-05** 🚀 Released **v0.1.5** — sturdier long-running tasks, Dream two-stage memory, production-ready sandboxing and programming Agent SDK. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.5) for details.
-- **2026-04-04** 🚀 Jinja2 response templates, Dream memory hardened, smarter retry handling.
-- **2026-04-03** 🧠 Xiaomi MiMo provider, chain-of-thought reasoning visible, Telegram UX polish.
-- **2026-04-02** 🧱 Long-running tasks run more reliably — core runtime hardening.
-- **2026-04-01** 🔑 GitHub Copilot auth restored; stricter workspace paths; OpenRouter Claude caching fix.
-- **2026-03-31** 🛰️ WeChat multimodal alignment, Discord/Matrix polish, Python SDK facade, MCP and tool fixes.
-- **2026-03-30** 🧩 OpenAI-compatible API tightened; composable agent lifecycle hooks.
-- **2026-03-29** 💬 WeChat voice, typing, QR/media resilience; fixed-session OpenAI-compatible API.
-- **2026-03-28** 📚 Provider docs refresh; skill template wording fix.
-- **2026-03-27** 🚀 Released **v0.1.4.post6** — architecture decoupling, litellm removal, end-to-end streaming, WeChat channel, and a security fix. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post6) for details.
-- **2026-03-26** 🏗️ Agent runner extracted and lifecycle hooks unified; stream delta coalescing at boundaries.
-- **2026-03-25** 🌏 StepFun provider, configurable timezone, Gemini thought signatures.
-- **2026-03-24** 🔧 WeChat compatibility, Feishu CardKit streaming, test suite restructured.
-- **2026-03-23** 🔧 Command routing refactored for plugins, WhatsApp/WeChat media, unified channel login CLI.
-- **2026-03-22** ⚡ End-to-end streaming, WeChat channel, Anthropic cache optimization, `/status` command.
-- **2026-03-21** 🔒 Replace `litellm` with native `openai` + `anthropic` SDKs. Please see [commit](https://github.com/HKUDS/nanobot/commit/3dfdab7).
-- **2026-03-20** 🧙 Interactive setup wizard — pick your provider, model autocomplete, and you're good to go.
-- **2026-03-19** 💬 Telegram gets more resilient under load; Feishu now renders code blocks properly.
-- **2026-03-18** 📷 Telegram can now send media via URL. Cron schedules show human-readable details.
-- **2026-03-17** ✨ Feishu formatting glow-up, Slack reacts when done, custom endpoints support extra headers, and image handling is more reliable.
-- **2026-03-16** 🚀 Released **v0.1.4.post5** — a refinement-focused release with stronger reliability and channel support, and a more dependable day-to-day experience. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post5) for details.
-- **2026-03-15** 🧩 DingTalk rich media, smarter built-in skills, and cleaner model compatibility.
-- **2026-03-14** 💬 Channel plugins, Feishu replies, and steadier MCP, QQ, and media handling.
-- **2026-03-13** 🌐 Multi-provider web search, LangSmith, and broader reliability improvements.
-- **2026-03-12** 🚀 VolcEngine support, Telegram reply context, `/restart`, and sturdier memory.
-- **2026-03-11** 🔌 WeCom, Ollama, cleaner discovery, and safer tool behavior.
-- **2026-03-10** 🧠 Token-based memory, shared retries, and cleaner gateway and Telegram behavior.
-- **2026-03-09** 💬 Slack thread polish and better Feishu audio compatibility.
-- **2026-03-08** 🚀 Released **v0.1.4.post4** — a reliability-packed release with safer defaults, better multi-instance support, sturdier MCP, and major channel and provider improvements. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post4) for details.
-- **2026-03-07** 🚀 Azure OpenAI provider, WhatsApp media, QQ group chats, and more Telegram/Feishu polish.
-- **2026-03-06** 🪄 Lighter providers, smarter media handling, and sturdier memory and CLI compatibility.
-- **2026-03-05** ⚡️ Telegram draft streaming, MCP SSE support, and broader channel reliability fixes.
-- **2026-03-04** 🛠️ Dependency cleanup, safer file reads, and another round of test and Cron fixes.
-- **2026-03-03** 🧠 Cleaner user-message merging, safer multimodal saves, and stronger Cron guards.
-- **2026-03-02** 🛡️ Safer default access control, sturdier Cron reloads, and cleaner Matrix media handling.
-- **2026-03-01** 🌐 Web proxy support, smarter Cron reminders, and Feishu rich-text parsing improvements.
-- **2026-02-28** 🚀 Released **v0.1.4.post3** — cleaner context, hardened session history, and smarter agent. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post3) for details.
-- **2026-02-27** 🧠 Experimental thinking mode support, DingTalk media messages, Feishu and QQ channel fixes.
-- **2026-02-26** 🛡️ Session poisoning fix, WhatsApp dedup, Windows path guard, Mistral compatibility.
-- **2026-02-25** 🧹 New Matrix channel, cleaner session context, auto workspace template sync.
-- **2026-02-24** 🚀 Released **v0.1.4.post2** — a reliability-focused release with a redesigned heartbeat, prompt cache optimization, and hardened provider & channel stability. See [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post2) for details.
-- **2026-02-23** 🔧 Virtual tool-call heartbeat, prompt cache optimization, Slack mrkdwn fixes.
-- **2026-02-22** 🛡️ Slack thread isolation, Discord typing fix, agent reliability improvements.
-- **2026-02-21** 🎉 Released **v0.1.4.post1** — new providers, media support across channels, and major stability improvements. See [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post1) for details.
-- **2026-02-20** 🐦 Feishu now receives multimodal files from users. More reliable memory under the hood.
-- **2026-02-19** ✨ Slack now sends files, Discord splits long messages, and subagents work in CLI mode.
-- **2026-02-18** ⚡️ nanobot now supports VolcEngine, MCP custom auth headers, and Anthropic prompt caching.
-- **2026-02-17** 🎉 Released **v0.1.4** — MCP support, progress streaming, new providers, and multiple channel improvements. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4) for details.
-- **2026-02-16** 🦞 nanobot now integrates a [ClawHub](https://clawhub.ai) skill — search and install public agent skills.
-- **2026-02-15** 🔑 nanobot now supports OpenAI Codex provider with OAuth login support.
-- **2026-02-14** 🔌 nanobot now supports MCP! See [MCP section](#mcp-model-context-protocol) for details.
-- **2026-02-13** 🎉 Released **v0.1.3.post7** — includes security hardening and multiple improvements. **Please upgrade to the latest version to address security issues**. See [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post7) for more details.
-- **2026-02-12** 🧠 Redesigned memory system — Less code, more reliable. Join the [discussion](https://github.com/HKUDS/nanobot/discussions/566) about it!
-- **2026-02-11** ✨ Enhanced CLI experience and added MiniMax support!
-- **2026-02-10** 🎉 Released **v0.1.3.post6** with improvements! Check the updates [notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post6) and our [roadmap](https://github.com/HKUDS/nanobot/discussions/431).
-- **2026-02-09** 💬 Added Slack, Email, and QQ support — nanobot now supports multiple chat platforms!
-- **2026-02-08** 🔧 Refactored Providers—adding a new LLM provider now takes just 2 simple steps! Check [here](#providers).
-- **2026-02-07** 🚀 Released **v0.1.3.post5** with Qwen support & several key improvements! Check [here](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post5) for details.
-- **2026-02-06** ✨ Added Moonshot/Kimi provider, Discord integration, and enhanced security hardening!
-- **2026-02-05** ✨ Added Feishu channel, DeepSeek provider, and enhanced scheduled tasks support!
-- **2026-02-04** 🚀 Released **v0.1.3.post4** with multi-provider & Docker support! Check [here](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post4) for details.
-- **2026-02-03** ⚡ Integrated vLLM for local LLM support and improved natural language task scheduling!
-- **2026-02-02** 🎉 nanobot officially launched! Welcome to try 🐈 nanobot!
+### 2. 实验日志
 
-</details>
+- 记录每天做了什么实验。
+- 记录实验配置、代码改动、数据集、运行命令、指标、失败原因和下一步计划。
+- 汇总修改过的关键文件和实验结论。
+- 为后续周报、复盘和论文写作保留结构化材料。
 
+### 3. 周报与 PPT
 
-## 💡 Key Features of nanobot
+- 根据实验日志和论文阅读记录自动生成 `周报.md`。
+- 生成可汇报的 PPT，包括本周目标、实验进展、结果表格、问题、下一步计划。
+- 输出应优先服务真实组会汇报，而不是泛泛总结。
 
-- **Ultra-lightweight**: stable long-running agent behavior with a small, readable core.
-- **Research-ready**: the codebase is intentionally simple enough to study, modify, and extend.
-- **Practical**: chat channels, API, memory, MCP, and deployment paths are already built in.
-- **Hackable**: you can start fast, then go deeper through repo docs instead of a monolithic landing page.
+### 4. 用户个性化
 
-## 📦 Install
+Agent 需要长期维护用户画像，包括：
 
-> [!IMPORTANT]
-> If you want the newest features and experiments, install from source. 
-> 
-> If you want the most stable day-to-day experience, install from PyPI or with `uv`.
+- 研究方向
+- 当前课题
+- 常用技术栈
+- 常用数据集和实验环境
+- 写作风格偏好
+- 作息和提醒时间
+- 当前最重要的实验与阻塞点
 
-**Install from source**
+这些信息用于筛选论文、解释结果、安排提醒和生成报告。
+
+### 5. Heartbeat 与 GPU 监控
+
+- 定期执行 `nvidia-smi` 检查显卡状态。
+- 当 GPU 空闲时提醒可以运行哪些实验。
+- 当正在运行的实验结束、异常退出或长时间无日志更新时提醒用户。
+- 将实验状态写入日志，便于之后生成日报和周报。
+
+## 预期工作流
+
+1. 用户配置研究方向、当前项目、技术栈和提醒偏好。
+2. Agent 每天检索最新相关论文，并基于本地缓存去重。
+3. Agent 阅读论文后输出主要内容、可复现实验信息和与当前工作的关系。
+4. 用户开始实验时，Agent 记录命令、配置、目标和预期结果。
+5. Heartbeat 监控 GPU 和实验进程状态。
+6. 每天结束时生成实验日志摘要。
+7. 每周自动生成 `周报.md` 和 PPT。
+
+## 本地数据设计
+
+后续实现时建议把本地状态分成几类：
+
+- `papers`: 论文元数据、摘要、链接、向量/关键词、是否已读、阅读笔记。
+- `experiments`: 实验名称、命令、配置、代码版本、开始/结束时间、GPU、状态、结果。
+- `reports`: 日报、周报、PPT 输入材料和生成记录。
+- `user_profile`: 研究方向、当前工作、技术栈、作息、提醒偏好。
+- `heartbeat`: GPU 状态、进程状态、提醒历史。
+
+数据库可以先用 SQLite，后续再按需要接入向量数据库或全文索引。
+
+## 当前保留的基础能力
+
+- Python Agent 主循环
+- CLI 入口
+- 本地记忆
+- Cron 计划任务
+- Heartbeat 服务
+- 搜索和网页读取工具
+- 文件读写工具
+- PDF、Word、Excel、PPT 相关依赖
+- 多模型 Provider 基础结构
+
+## 运行方式
+
+安装本地包：
 
 ```bash
-git clone https://github.com/HKUDS/nanobot.git
-cd nanobot
 pip install -e .
 ```
 
-**Install with `uv`**
-
-```bash
-uv tool install nanobot-ai
-```
-
-**Install from PyPI**
-
-```bash
-pip install nanobot-ai
-```
-
-## 🚀 Quick Start
-
-**1. Initialize**
+初始化配置：
 
 ```bash
 nanobot onboard
 ```
 
-**2. Configure** (`~/.nanobot/config.json`)
-
-Configure these **two parts** in your config (other options have defaults). Add or merge the following blocks into your existing config instead of replacing the whole file.
-
-*Set your API key* (e.g. [OpenRouter](https://openrouter.ai/keys), recommended for global users):
-
-```json
-{
-  "providers": {
-    "openrouter": {
-      "apiKey": "sk-or-v1-xxx"
-    }
-  }
-}
-```
-
-*Set your model* (optionally pin a provider — defaults to auto-detection):
-
-```json
-{
-  "agents": {
-    "defaults": {
-      "provider": "openrouter",
-      "model": "anthropic/claude-opus-4-6"
-    }
-  }
-}
-```
-
-**3. Chat**
+启动 Agent：
 
 ```bash
 nanobot agent
 ```
 
+## 改造优先级
 
-- Want different LLM providers, web search, MCP, security settings, or more config options? See [Configuration](./docs/configuration.md)
-- Want to run nanobot in chat apps like Telegram, Discord, WeChat or Feishu? See [Chat Apps](./docs/chat-apps.md)
-- Want Docker or Linux service deployment? See [Deployment](./docs/deployment.md)
+1. 清理旧项目残留，只保留科研助理需要的核心模块。
+2. 重写 `USER.md`、`HEARTBEAT.md` 和系统提示，使 Agent 明确服务科研工作流。
+3. 增加论文缓存与去重逻辑。
+4. 增加实验日志结构化记录。
+5. 增加 `nvidia-smi` heartbeat 检查和实验完成/失败提醒。
+6. 增加周报 Markdown 生成。
+7. 增加 PPT 生成。
 
-## 🧪 WebUI (Development)
+## 设计原则
 
-> [!NOTE]
-> The WebUI development workflow currently requires a source checkout and is not yet shipped together with the official packaged release. See [WebUI Document](./webui/README.md) for full WebUI development docs and build steps.
-
-<p align="center">
-  <img src="images/nanobot_webui.png" alt="nanobot webui preview" width="900">
-</p>
-
-**1. Enable the WebSocket channel in `~/.nanobot/config.json`**
-
-```json
-{ "channels": { "websocket": { "enabled": true } } }
-```
-
-**2. Start the gateway**
-
-```bash
-nanobot gateway
-```
-
-**3. Start the webui dev server**
-
-```bash
-cd webui
-bun install
-bun run dev
-```
-
-## 🏗️ Architecture
-
-<p align="center">
-  <img src="images/nanobot_arch.png" alt="nanobot architecture" width="800">
-</p>
-
-🐈 nanobot stays lightweight by centering everything around a small agent loop: messages come in from chat apps, the LLM decides when tools are needed, and memory or skills are pulled in only as context instead of becoming a heavy orchestration layer. That keeps the core path readable and easy to extend, while still letting you add channels, tools, memory, and deployment options without turning the system into a monolith.
-
-## ✨ Features
-
-<table align="center">
-  <tr align="center">
-    <th><p align="center">📈 24/7 Real-Time Market Analysis</p></th>
-    <th><p align="center">🚀 Full-Stack Software Engineer</p></th>
-    <th><p align="center">📅 Smart Daily Routine Manager</p></th>
-    <th><p align="center">📚 Personal Knowledge Assistant</p></th>
-  </tr>
-  <tr>
-    <td align="center"><p align="center"><img src="case/search.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/code.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/schedule.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/memory.gif" width="180" height="400"></p></td>
-  </tr>
-  <tr>
-    <td align="center">Discovery • Insights • Trends</td>
-    <td align="center">Develop • Deploy • Scale</td>
-    <td align="center">Schedule • Automate • Organize</td>
-    <td align="center">Learn • Memory • Reasoning</td>
-  </tr>
-</table>
-
-## 📚 Docs
-
-Browse the [repo docs](./docs/README.md) for the latest features and GitHub development version, or visit [nanobot.wiki](https://nanobot.wiki/docs/latest/getting-started/nanobot-overview) for the stable release documentation.
-
-- Talk to your nanobot with familiar chat apps: [Chat Apps](./docs/chat-apps.md)
-- Configure providers, web search, MCP, and runtime behavior: [Configuration](./docs/configuration.md)
-- Integrate nanobot with local tools and automations: [OpenAI-Compatible API](./docs/openai-api.md) · [Python SDK](./docs/python-sdk.md)
-- Run nanobot with Docker or as a Linux service: [Deployment](./docs/deployment.md)
-
-## 🤝 Contribute & Roadmap
-
-PRs welcome! The codebase is intentionally small and readable. 🤗
-
-### Branching Strategy
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Stable releases — bug fixes and minor improvements |
-| `nightly` | Experimental features — new features and breaking changes |
-
-**Unsure which branch to target?** See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
-
-**Roadmap** — Pick an item and [open a PR](https://github.com/HKUDS/nanobot/pulls)!
-
-- **Multi-modal** — See and hear (images, voice, video)
-- **Long-term memory** — Never forget important context
-- **Better reasoning** — Multi-step planning and reflection
-- **More integrations** — Calendar and more
-- **Self-improvement** — Learn from feedback and mistakes
-
-## Contact
-
-This project was started by [Xubin Ren](https://github.com/re-bin) as a personal open-source project and continues to be maintained in an individual capacity using personal resources, with contributions from the open-source community. Feel free to contact [xubinrencs@gmail.com](mailto:xubinrencs@gmail.com) for questions, ideas, or collaboration.
-
-### Contributors
-
-<a href="https://github.com/HKUDS/nanobot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HKUDS/nanobot&max=100&columns=12&updated=20260210" alt="Contributors" />
-</a>
-
-
-## ⭐ Star History
-
-<div align="center">
-  <a href="https://star-history.com/#HKUDS/nanobot&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);" />
-    </picture>
-  </a>
-</div>
-
-<p align="center">
-  <em> Thanks for visiting ✨ nanobot!</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.nanobot&style=for-the-badge&color=00d4ff" alt="Views">
-</p>
+- 本地优先：论文缓存、实验日志和用户画像默认存本地。
+- 可追溯：每条实验结论都要能追到命令、配置、代码改动和原始结果。
+- 少打扰：提醒要基于明确事件，例如 GPU 空闲、实验完成、实验失败、到达日报/周报时间。
+- 面向研究进展：输出重点是方法、实验、结果、问题和下一步，而不是闲聊。
+- 可渐进实现：先用简单文件和 SQLite 跑通，再增加更复杂的检索、报告和监控能力。
