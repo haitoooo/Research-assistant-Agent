@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="endingGrad" x1="1" y1="0.5" x2="0" y2="0.5">
+      <stop offset="0" stop-color="#014723"/>
+      <stop offset="0.59" stop-color="#014723" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#014723" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+  <svg x="-1.82" y="0" width="1281.82" height="392.28" viewBox="0 0.21604 1 0.40805" preserveAspectRatio="none">
+    <image href="campus_bg.jpeg" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>
+  </svg>
+  <rect x="0" y="0" width="1280" height="392.28" fill="url(#endingGrad)" stroke="none" stroke-width="1"/>
+  <svg x="285.15" y="69.4" width="709.7" height="250.2" viewBox="0 0.19562 1 0.77142" preserveAspectRatio="none">
+    <image href="sysu_mark_wide.png" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>
+  </svg>
+  <text x="640" y="542" text-anchor="middle" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="76" fill="#084A27" font-weight="bold" letter-spacing="8">
+    <tspan>{{THANK_YOU}}</tspan>
+  </text>
+  <text x="640" y="606" text-anchor="middle" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="28" fill="#595959">
+    <tspan>{{ENDING_SUBTITLE}}</tspan>
+  </text>
+  <text x="640" y="656" text-anchor="middle" xml:space="preserve" font-family="Arial, &quot;Microsoft YaHei&quot;, sans-serif" font-size="20" fill="#595959">
+    <tspan>{{CONTACT_INFO}}</tspan>
+  </text>
+</svg>

@@ -666,6 +666,7 @@ def _run_gateway(
     from nanobot.channels.websocket import publish_runtime_model_update
     from nanobot.cron.service import CronService
     from nanobot.cron.types import CronJob
+    from nanobot.gpu_monitor.service import GpuMonitorEvent, GpuMonitorService
     from nanobot.heartbeat.service import HeartbeatService
     from nanobot.providers.factory import build_provider_snapshot, load_provider_snapshot
     from nanobot.session.manager import SessionManager
@@ -689,6 +690,7 @@ def _run_gateway(
     # Create cron service with workspace-scoped store
     cron_store_path = config.workspace_path / "cron" / "jobs.json"
     cron = CronService(cron_store_path)
+    gpu_monitor = GpuMonitorService(config.workspace_path / "gpu-monitor" / "jobs.json")
 
     # Create agent with cron service
     agent = AgentLoop.from_config(
@@ -697,6 +699,7 @@ def _run_gateway(
         model=provider_snapshot.model,
         context_window_tokens=provider_snapshot.context_window_tokens,
         cron_service=cron,
+        gpu_monitor_service=gpu_monitor,
         session_manager=session_manager,
         image_generation_provider_configs={
             "openrouter": config.providers.openrouter,
@@ -849,6 +852,62 @@ def _run_gateway(
         # Fallback keeps prior behavior but remains explicit.
         return "cli", "direct"
 
+    def _pick_gpu_monitor_target(event: GpuMonitorEvent) -> tuple[str, str, str | None]:
+        """Prefer the channel/chat that registered the GPU monitor job."""
+        enabled = set(channels.enabled_channels)
+        if event.job.channel in enabled and event.job.chat_id:
+            return event.job.channel, event.job.chat_id, event.job.session_key
+        channel, chat_id = _pick_heartbeat_target()
+        return channel, chat_id, None
+
+    async def on_gpu_monitor_event(event: GpuMonitorEvent) -> None:
+        """Wake the agent only when the Python GPU monitor emits an event."""
+        import json as _json
+
+        channel, chat_id, session_key = _pick_gpu_monitor_target(event)
+        if channel == "cli":
+            return
+
+        async def _silent(*_args, **_kwargs):
+            pass
+
+        prompt = (
+            "[Your response will be delivered directly to the user's messaging app. "
+            "Output ONLY a concise user-facing notification in the user's language. "
+            "If the user's language is unknown, use Chinese. "
+            "Do not mention internal files, JSON, polling, or decision logic.]\n\n"
+            "A GPU monitor event occurred. Notify the user with the practical result. "
+            "For command_finished, include whether it succeeded when the return code is known. "
+            "For command_started, say the training command has started and include the GPU if present. "
+            "Event JSON:\n"
+            f"{_json.dumps(event.to_dict(), ensure_ascii=False, indent=2)}"
+        )
+        try:
+            resp = await agent.process_direct(
+                prompt,
+                session_key=f"gpu-monitor:{event.job.id}",
+                channel=channel,
+                chat_id=chat_id,
+                on_progress=_silent,
+            )
+            content = (resp.content if resp else "") or event.default_message()
+        except Exception:
+            logger.exception("GPU monitor event agent notification failed")
+            content = event.default_message()
+
+        await _deliver_to_channel(
+            OutboundMessage(
+                channel=channel,
+                chat_id=chat_id,
+                content=content,
+                metadata=dict(event.job.channel_meta),
+            ),
+            record=True,
+            session_key=session_key,
+        )
+
+    gpu_monitor.on_event = on_gpu_monitor_event
+
     # Create heartbeat service
     heartbeat_preamble = (
         "[Your response will be delivered directly to the user's messaging app. "
@@ -921,6 +980,10 @@ def _run_gateway(
         console.print(f"[green]✓[/green] Cron: {cron_status['jobs']} scheduled jobs")
 
     console.print(f"[green]✓[/green] Heartbeat: every {hb_cfg.interval_s}s")
+
+    gpu_monitor_jobs = gpu_monitor.list_jobs()
+    if gpu_monitor_jobs:
+        console.print(f"[green]GPU monitor:[/green] {len(gpu_monitor_jobs)} job(s)")
 
     async def _health_server(host: str, health_port: int):
         """Lightweight HTTP health endpoint on the gateway port."""
@@ -1006,6 +1069,7 @@ def _run_gateway(
     async def run():
         try:
             await cron.start()
+            await gpu_monitor.start()
             await heartbeat.start()
             tasks = [
                 agent.run(),
@@ -1025,6 +1089,7 @@ def _run_gateway(
         finally:
             await agent.close_mcp()
             heartbeat.stop()
+            gpu_monitor.stop()
             cron.stop()
             agent.stop()
             await channels.stop_all()

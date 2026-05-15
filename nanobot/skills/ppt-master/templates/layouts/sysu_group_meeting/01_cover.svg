@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="coverGrad" x1="1" y1="0.5" x2="0" y2="0.5">
+      <stop offset="0" stop-color="#014723"/>
+      <stop offset="0.59" stop-color="#014723" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#014723" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+  <svg x="0" y="228.5" width="1281.82" height="302.14" viewBox="0 0.21604 1 0.31429" preserveAspectRatio="none">
+    <image href="campus_bg.jpeg" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>
+  </svg>
+  <rect x="0" y="228.5" width="1280" height="302.14" fill="url(#coverGrad)" stroke="none" stroke-width="1"/>
+  <svg x="455.58" y="96.92" width="360.42" height="112.62" viewBox="0 0.212 0.97716 0.66808" preserveAspectRatio="none">
+    <image href="sysu_mark.png" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>
+  </svg>
+  <text x="640" y="346" text-anchor="middle" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="72" fill="#F2F2F2" font-weight="bold">
+    <tspan>{{TITLE}}</tspan>
+  </text>
+  <text x="640" y="405" text-anchor="middle" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="34" fill="#F2F2F2">
+    <tspan>{{SUBTITLE}}</tspan>
+  </text>
+  <text x="640" y="462" text-anchor="middle" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="26" fill="#F2F2F2">
+    <tspan>{{AUTHOR}}</tspan>
+  </text>
+  <text x="640" y="620" text-anchor="middle" xml:space="preserve" font-family="Arial, &quot;Microsoft YaHei&quot;, sans-serif" font-size="20" fill="#595959">
+    <tspan>{{DATE}}</tspan>
+  </text>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+  <text x="72" y="58" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="25" fill="#595959" font-weight="bold">
+    <tspan>3 </tspan><tspan>{{PAGE_TITLE}}</tspan>
+  </text>
+  <line x1="62" y1="90" x2="1177" y2="90" stroke="#084A27" stroke-width="4.7"/>
+  <text x="72" y="148" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="30" fill="#000000" font-weight="bold">
+    <tspan>{{KEY_MESSAGE}}</tspan>
+  </text>
+  <rect x="72" y="198" width="344" height="318" fill="#FFFFFF" stroke="#D9E2DC" stroke-width="1.5"/>
+  <rect x="72" y="198" width="344" height="8" fill="#014723"/>
+  <text x="96" y="250" text-anchor="start" font-family="Arial, &quot;Microsoft YaHei&quot;, sans-serif" font-size="44" fill="#084A27" font-weight="bold">01</text>
+  <text x="96" y="296" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="24" fill="#000000" font-weight="bold">
+    <tspan>Verify</tspan>
+  </text>
+  <text x="96" y="344" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="21" fill="#000000">
+    <tspan>Dataset / metric / baseline</tspan>
+    <tspan x="96" dy="36">Result reproduction</tspan>
+    <tspan x="96" dy="36">Failure cases</tspan>
+  </text>
+  <rect x="468" y="198" width="344" height="318" fill="#FFFFFF" stroke="#D9E2DC" stroke-width="1.5"/>
+  <rect x="468" y="198" width="344" height="8" fill="#084A27"/>
+  <text x="492" y="250" text-anchor="start" font-family="Arial, &quot;Microsoft YaHei&quot;, sans-serif" font-size="44" fill="#084A27" font-weight="bold">02</text>
+  <text x="492" y="296" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="24" fill="#000000" font-weight="bold">
+    <tspan>Improve</tspan>
+  </text>
+  <text x="492" y="344" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="21" fill="#000000">
+    <tspan>Model / feature changes</tspan>
+    <tspan x="492" dy="36">Ablation plan</tspan>
+    <tspan x="492" dy="36">Expected evidence</tspan>
+  </text>
+  <rect x="864" y="198" width="344" height="318" fill="#FFFFFF" stroke="#D9E2DC" stroke-width="1.5"/>
+  <rect x="864" y="198" width="344" height="8" fill="#014723"/>
+  <text x="888" y="250" text-anchor="start" font-family="Arial, &quot;Microsoft YaHei&quot;, sans-serif" font-size="44" fill="#084A27" font-weight="bold">03</text>
+  <text x="888" y="296" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="24" fill="#000000" font-weight="bold">
+    <tspan>Deliver</tspan>
+  </text>
+  <text x="888" y="344" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="21" fill="#000000">
+    <tspan>Next checkpoint</tspan>
+    <tspan x="888" dy="36">Output artifact</tspan>
+    <tspan x="888" dy="36">Help needed</tspan>
+  </text>
+  <rect x="72" y="560" width="1136" height="64" fill="#F7F9F7" stroke="#D9E2DC" stroke-width="1"/>
+  <text x="96" y="601" text-anchor="start" xml:space="preserve" font-family="&quot;Microsoft YaHei&quot;, Arial, sans-serif" font-size="22" fill="#000000">
+    <tspan>{{CONTENT_AREA}}</tspan>
+  </text>
+</svg>

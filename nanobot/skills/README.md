@@ -27,5 +27,7 @@ The skill format and metadata structure follow OpenClaw's conventions to maintai
 | `weather` | Get weather info using wttr.in and Open-Meteo |
 | `summarize` | Summarize URLs, files, and YouTube videos |
 | `tmux` | Remote-control tmux sessions |
+| `gpu-monitor` | Start event-driven GPU availability/process monitors and notify when resources free up or tasks finish |
+| `paper-ingest` | Download research PDFs, avoid duplicates with a SQLite paper database, track SYSU/manual-download items, convert PDFs to Markdown with MinerU, and index/query Markdown with LightRAG |
 | `clawhub` | Search and install skills from ClawHub registry |
 | `skill-creator` | Create new skills |
