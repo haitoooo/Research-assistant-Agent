@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
 import time
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlparse
 
 import requests
 
@@ -17,6 +20,51 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"}
 
 class MinerUTransientError(RuntimeError):
     pass
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def trace_enabled() -> bool:
+    return os.getenv("RAGANYTHING_TRACE", "1").lower() not in {"0", "false", "no"}
+
+
+def trace_event(event: str, **fields) -> None:
+    trace_path = os.getenv("RAGANYTHING_TRACE_FILE")
+    if not trace_path or not trace_enabled():
+        return
+    safe_fields = {
+        key: value
+        for key, value in fields.items()
+        if key.lower() not in {"api_key", "authorization", "token", "secret", "access_key", "secret_key"}
+    }
+    payload = {"ts": now_iso(), "event": event, **safe_fields}
+    line = json.dumps(payload, ensure_ascii=False, default=str)
+    try:
+        path = Path(trace_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
+    except Exception as exc:
+        try:
+            print(f"trace write failed: {exc}", flush=True)
+        except Exception:
+            pass
+    try:
+        summary_keys = ("method", "host", "path", "status_code", "duration_ms", "error_type", "file", "bytes", "api_code")
+        summary = {key: safe_fields[key] for key in summary_keys if key in safe_fields}
+        line = f"trace {event}: {json.dumps(summary, ensure_ascii=True, default=str)}"
+        if len(line) > 1000:
+            line = line[:1000] + "...<truncated>"
+        print(line, flush=True)
+    except Exception:
+        pass
+
+
+def safe_host(url: str) -> str:
+    parsed = urlparse(str(url))
+    return parsed.netloc or str(url).split("/", 1)[0]
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -58,12 +106,35 @@ def token_candidates(env: dict[str, str]) -> list[str]:
 def request_json(method: str, url: str, token: str, **kwargs) -> dict:
     headers = kwargs.pop("headers", {})
     headers["Authorization"] = f"Bearer {token}"
-    response = requests.request(method, url, headers=headers, timeout=60, **kwargs)
+    start = time.perf_counter()
+    trace_event("mineru.http.start", method=method, host=safe_host(url), path=urlparse(url).path)
+    try:
+        response = requests.request(method, url, headers=headers, timeout=60, **kwargs)
+    except Exception as exc:
+        trace_event(
+            "mineru.http.error",
+            method=method,
+            host=safe_host(url),
+            path=urlparse(url).path,
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            error_type=type(exc).__name__,
+            error=str(exc)[:500],
+        )
+        raise
     try:
         payload = response.json()
     except ValueError:
         response.raise_for_status()
         raise RuntimeError(f"Expected JSON from {url}, got {response.text[:200]!r}")
+    trace_event(
+        "mineru.http.end",
+        method=method,
+        host=safe_host(url),
+        path=urlparse(url).path,
+        status_code=response.status_code,
+        duration_ms=int((time.perf_counter() - start) * 1000),
+        api_code=payload.get("code"),
+    )
     if response.status_code >= 400:
         raise RuntimeError(f"HTTP {response.status_code}: {payload}")
     code = payload.get("code")
@@ -78,11 +149,22 @@ def download_bytes(url: str, timeout: int = 180) -> bytes:
     last_error: Exception | None = None
     for attempt in range(3):
         try:
+            start = time.perf_counter()
+            trace_event("mineru.download_http.start", host=safe_host(url), attempt=attempt + 1)
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()
+            trace_event(
+                "mineru.download_http.end",
+                host=safe_host(url),
+                attempt=attempt + 1,
+                status_code=response.status_code,
+                bytes=len(response.content),
+                duration_ms=int((time.perf_counter() - start) * 1000),
+            )
             return response.content
         except Exception as exc:
             last_error = exc
+            trace_event("mineru.download_http.error", host=safe_host(url), attempt=attempt + 1, error_type=type(exc).__name__, error=str(exc)[:500])
             time.sleep(2 + attempt * 3)
 
     curl = "curl.exe" if os.name == "nt" else "curl"
@@ -120,7 +202,16 @@ def upload_files(pdf_paths: list[Path], file_urls: list[dict]) -> None:
             raise RuntimeError(f"Missing upload URL for {path.name}: {entry}")
         print(f"upload {path.name}", flush=True)
         with path.open("rb") as handle:
+            start = time.perf_counter()
+            trace_event("mineru.upload_http.start", file=path.name, bytes=path.stat().st_size, host=safe_host(upload_url))
             response = requests.put(upload_url, data=handle, headers={"Content-Type": "application/pdf"}, timeout=300)
+        trace_event(
+            "mineru.upload_http.end",
+            file=path.name,
+            host=safe_host(upload_url),
+            status_code=response.status_code,
+            duration_ms=int((time.perf_counter() - start) * 1000),
+        )
         if response.status_code >= 400:
             raise RuntimeError(f"upload failed HTTP {response.status_code}: {response.text[:500]}")
 
@@ -227,12 +318,12 @@ def sync_db(root: Path) -> None:
         if completed.returncode != 0:
             print(f"paper DB sync failed with exit code {completed.returncode}", flush=True)
 
-    lightrag = Path(__file__).with_name("lightrag_rag.py")
-    if not lightrag.exists():
+    raganything = Path(__file__).with_name("raganything_rag.py")
+    if not raganything.exists():
         return
-    completed = subprocess.run([sys.executable, str(lightrag), "--root", str(root), "sync"], check=False)
+    completed = subprocess.run([sys.executable, str(raganything), "--root", str(root), "sync"], check=False)
     if completed.returncode != 0:
-        print(f"LightRAG sync skipped/failed with exit code {completed.returncode}", flush=True)
+        print(f"RAGAnything sync skipped/failed with exit code {completed.returncode}", flush=True)
 
 
 def main() -> int:
@@ -244,6 +335,7 @@ def main() -> int:
     args = parser.parse_args()
 
     root = args.root
+    os.environ.setdefault("RAGANYTHING_TRACE_FILE", str(root / "raganything_trace.jsonl"))
     pdf_dir = root / "pdf"
     md_dir = root / "md"
     env = load_env(root / ".env")

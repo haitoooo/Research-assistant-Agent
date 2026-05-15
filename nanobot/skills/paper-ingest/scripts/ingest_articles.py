@@ -26,19 +26,21 @@ def pdfs_missing_markdown(root: Path) -> list[Path]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the full paper ingest pipeline: metadata, MinerU, LightRAG.")
+    parser = argparse.ArgumentParser(description="Run the full paper ingest pipeline: metadata, MinerU, GitHub source, RAGAnything.")
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--interval", type=int, default=20)
     parser.add_argument("--timeout", type=int, default=3600)
     parser.add_argument("--skip-mineru", action="store_true")
-    parser.add_argument("--skip-lightrag", action="store_true")
+    parser.add_argument("--skip-raganything", action="store_true")
+    parser.add_argument("--skip-lightrag", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--include-pdf-in-rag", action="store_true", help="Let RAGAnything also process PDFs directly.")
     args = parser.parse_args()
 
     root = args.root
     script_dir = Path(__file__).resolve().parent
     paper_db = script_dir / "paper_db.py"
     mineru = script_dir / "mineru_pdf_to_md.py"
-    lightrag = script_dir / "lightrag_rag.py"
+    raganything = script_dir / "raganything_rag.py"
     github_sources = script_dir / "github_sources.py"
 
     rc = run([sys.executable, str(paper_db), "--root", str(root), "sync"])
@@ -76,10 +78,16 @@ def main() -> int:
         if rc != 0:
             return rc
 
-    if not args.skip_lightrag:
-        rc = run([sys.executable, str(lightrag), "--root", str(root), "sync"])
+    if args.skip_lightrag:
+        args.skip_raganything = True
+
+    if not args.skip_raganything:
+        command = [sys.executable, str(raganything), "--root", str(root), "sync"]
+        if args.include_pdf_in_rag:
+            command.append("--include-pdf")
+        rc = run(command)
         if rc != 0:
-            print(f"LightRAG sync failed or skipped with exit code {rc}", flush=True)
+            print(f"RAGAnything sync failed or skipped with exit code {rc}", flush=True)
             return rc
     return 0
 

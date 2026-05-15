@@ -1,6 +1,6 @@
 ---
 name: paper-ingest
-description: Download research paper PDFs into the article workspace, avoid duplicate downloads with a SQLite paper database, keep a WeChat-ready SYSU/manual-download list, convert PDFs to Markdown with MinerU, and index/query Markdown with LightRAG.
+description: Download research paper PDFs into the article workspace, avoid duplicate downloads with a SQLite paper database, keep a WeChat-ready SYSU/manual-download list, convert PDFs to Markdown with MinerU, and index/query papers plus official GitHub source with RAGAnything.
 metadata: {"nanobot":{"os":["darwin","linux","windows"],"requires":{"bins":["python"]}}}
 ---
 
@@ -18,7 +18,8 @@ Default workspace layout:
 - MinerU credentials: `.nanobot/workspace/articles/.env`
 - Manual download queue: `.nanobot/workspace/articles/need_sysu_download.md`
 - Paper metadata database: `.nanobot/workspace/articles/articles.sqlite3`
-- LightRAG storage: `.nanobot/workspace/articles/lightrag/`
+- RAGAnything storage: `.nanobot/workspace/articles/raganything/`
+- RAGAnything parser output: `.nanobot/workspace/articles/raganything_output/`
 
 ## Database-first rule
 
@@ -35,7 +36,7 @@ This does the full sequence:
 3. Automatically call MinerU for missing Markdown.
 4. Sync metadata again.
 5. Clone/pull registered GitHub source repositories and generate code Markdown.
-6. Insert new/changed paper Markdown and code Markdown into LightRAG.
+6. Insert new/changed paper Markdown and code Markdown into RAGAnything.
 
 If you only need duplicate metadata, start by syncing the local paper database:
 
@@ -53,16 +54,16 @@ If the check prints `found`, do not download it again unless the user explicitly
 
 After any successful PDF download, run metadata `sync` so new PDFs and Markdown paths are stored for duplicate detection.
 
-After Markdown conversion, `ingest_articles.py` runs LightRAG sync so new or changed Markdown files are inserted into the LightRAG working directory. Manual command:
+After Markdown conversion, `ingest_articles.py` runs RAGAnything sync so new or changed Markdown files are inserted into the RAGAnything working directory. Manual command:
 
 ```powershell
-python nanobot\skills\paper-ingest\scripts\lightrag_rag.py --root .nanobot\workspace\articles sync
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles sync
 ```
 
 For RAG questions over the indexed papers:
 
 ```powershell
-python nanobot\skills\paper-ingest\scripts\lightrag_rag.py --root .nanobot\workspace\articles query "加密域多目标跟踪有哪些主要方法？" --mode hybrid
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles query "加密域多目标跟踪有哪些主要方法？" --mode mix
 ```
 
 ## Download workflow
@@ -144,19 +145,19 @@ Access_Key=...
 Secret_Key=...
 ```
 
-It creates a MinerU batch, uploads all PDFs, polls until complete, downloads the result zip files, and writes one `.md` per PDF into `md/`. It also extracts images from MinerU zip files into `md/images/`, so Markdown links such as `![](images/xxx.jpg)` resolve locally. It skips existing non-empty Markdown files during result download but still refreshes image assets when a result zip is available. On success it runs `paper_db.py sync` for metadata and `lightrag_rag.py sync` for LightRAG indexing.
+It creates a MinerU batch, uploads all PDFs, polls until complete, downloads the result zip files, and writes one `.md` per PDF into `md/`. It also extracts images from MinerU zip files into `md/images/`, so Markdown links such as `![](images/xxx.jpg)` resolve locally. It skips existing non-empty Markdown files during result download but still refreshes image assets when a result zip is available. On success the full pipeline runs `paper_db.py sync` for metadata and `raganything_rag.py sync` for RAGAnything indexing.
 
-## LightRAG processing
+## RAGAnything processing
 
-Install the LightRAG package when first needed:
+Install RAGAnything when first needed:
 
 ```powershell
-python -m pip install lightrag-hku
+python -m pip install raganything
 ```
 
-LightRAG also needs an LLM/embedding provider key. The default helper uses OpenAI-compatible functions, so set `OPENAI_API_KEY` in the environment or in `.nanobot/workspace/articles/.env`.
+RAGAnything uses LightRAG storage internally and also needs MinerU, LLM, vision, and embedding provider keys. The helper reads `.nanobot/config.json` first and supports OpenAI-compatible providers. Use source-level API integration wherever possible: MinerU PDF conversion goes through MinerU's HTTP API, Markdown/code insertion goes through RAGAnything/LightRAG Python APIs, embeddings go through the configured embedding API, and image understanding goes through the configured VLM API.
 
-The LightRAG helper reads `.nanobot/config.json` and uses `agents.defaults.visual_model` for LLM calls when present. With this config:
+The RAGAnything helper reads `.nanobot/config.json` and uses `agents.defaults.visual_model` for text and image understanding when present. With this config:
 
 ```json
 {
@@ -169,7 +170,7 @@ The LightRAG helper reads `.nanobot/config.json` and uses `agents.defaults.visua
 }
 ```
 
-LightRAG entity extraction, summarization, and query answering call `Qwen3.5-397B-A17B` through the configured OpenAI-compatible provider. During `sync`, local Markdown image links such as `![](images/xxx.jpg)` are also sent to this visual model for concise figure/table captions; those captions are appended to the text inserted into LightRAG and cached in SQLite so unchanged images are not captioned repeatedly.
+RAGAnything text extraction, multimodal processing, graph extraction, summarization, and query answering call `Qwen3.5-397B-A17B` through the configured OpenAI-compatible provider. Local Markdown image links such as `![](images/xxx.jpg)` are handled by RAGAnything's multimodal processors and sent to this visual model when image processing is enabled.
 
 Embeddings stay separate and read these fields from `.nanobot/config.json`:
 
@@ -184,19 +185,31 @@ Embeddings stay separate and read these fields from `.nanobot/config.json`:
 }
 ```
 
-The helper calls `providers.apiyi.apiBase/apiKey` for embeddings while continuing to call `providers.<provider>` for the visual/LLM model. Environment overrides are available: `LIGHTRAG_EMBEDDING_MODEL`, `LIGHTRAG_EMBEDDING_API_KEY`, `LIGHTRAG_EMBEDDING_BASE_URL`, `LIGHTRAG_EMBEDDING_DIM`, and `LIGHTRAG_EMBEDDING_MAX_TOKENS`. If a paper has too many images and you want to cap visual-model calls, set `LIGHTRAG_VISUAL_CAPTION_MAX_IMAGES_PER_DOC` to a positive integer; `0` means no cap.
+The helper calls `providers.apiyi.apiBase/apiKey` for embeddings while continuing to call `providers.<provider>` for the visual/LLM model. Environment overrides are available: `RAGANYTHING_EMBEDDING_MODEL`, `RAGANYTHING_EMBEDDING_API_KEY`, `RAGANYTHING_EMBEDDING_BASE_URL`, `RAGANYTHING_EMBEDDING_DIM`, and `RAGANYTHING_EMBEDDING_MAX_TOKENS`. Set `RAGANYTHING_ENABLE_IMAGE_PROCESSING=0` only when you need a text-only indexing run.
 
-LightRAG commands:
+Per-request trace is enabled by default and written to `.nanobot/workspace/articles/raganything_trace.jsonl`. It logs each MinerU HTTP request, LLM request, VLM request, embedding request, source insertion step, duration, model/provider, input sizes, and errors. It never logs API keys or full prompts. Set `RAGANYTHING_TRACE=0` to disable it, or set `RAGANYTHING_TRACE_FILE` to redirect the JSONL trace file.
+
+RAGAnything commands:
 
 ```powershell
-# Insert new/changed Markdown files into LightRAG
-python nanobot\skills\paper-ingest\scripts\lightrag_rag.py --root .nanobot\workspace\articles sync
+# Insert new/changed Markdown and official GitHub source Markdown into RAGAnything.
+# By default this uses existing md/ and code_md/ through source-level Python APIs, so MinerU is not rerun.
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles sync
+
+# Convert missing PDFs through the MinerU HTTP API, then index the generated Markdown
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles sync --include-pdf
 
 # Ask questions
-python nanobot\skills\paper-ingest\scripts\lightrag_rag.py --root .nanobot\workspace\articles query "question" --mode hybrid
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles query "question" --mode mix
 
-# Inspect indexed Markdown records
-python nanobot\skills\paper-ingest\scripts\lightrag_rag.py --root .nanobot\workspace\articles status
+# Inspect indexed records
+python nanobot\skills\paper-ingest\scripts\raganything_rag.py --root .nanobot\workspace\articles status
+```
+
+For a local WebUI, point the LightRAG API server at RAGAnything's working directory:
+
+```powershell
+lightrag-server --working-dir .nanobot\workspace\articles\raganything --host 127.0.0.1 --port 9621
 ```
 
 Use SQLite only for duplicate detection and manual-download tracking. Do not use the old SQLite FTS chunks path for RAG unless the user explicitly asks for a fallback.
@@ -230,7 +243,7 @@ Then run the full pipeline:
 python nanobot\skills\paper-ingest\scripts\ingest_articles.py --root .nanobot\workspace\articles
 ```
 
-The GitHub step clones or pulls repos into `code/`, extracts README/config/training/eval/demo/source files into one Markdown file per repo under `code_md/`, and LightRAG indexes those files together with paper Markdown. This lets questions retrieve both the paper text and implementation details.
+The GitHub step clones or pulls repos into `code/`, extracts README/config/training/eval/demo/source files into one Markdown file per repo under `code_md/`, and RAGAnything indexes those files together with paper Markdown. This lets questions retrieve both the paper text and implementation details.
 
 Manual GitHub commands:
 
@@ -264,10 +277,10 @@ Before reporting done:
 - Prefer `ingest_articles.py` for the full workflow unless the user asked for a single sub-step.
 - Confirm `paper_db.py sync` was run at the start and after any new PDF/Markdown output.
 - Confirm `github_sources.py sync` was run when GitHub repos are registered.
-- Confirm `lightrag_rag.py sync` was run after Markdown output, or report why it was skipped.
+- Confirm `raganything_rag.py sync` was run after Markdown output, or report why it was skipped.
 - List valid PDFs in `pdf/` and confirm each starts with `%PDF`.
 - List generated Markdown files in `md/` and confirm non-zero sizes.
 - Confirm Markdown image links resolve under `md/images/` when the converted Markdown contains `![](images/...)`.
-- Show `paper_db.py stats` and `lightrag_rag.py status` counts when available.
+- Show `paper_db.py stats` and `raganything_rag.py status` counts when available.
 - Mention any papers added to `need_sysu_download.md`.
 - Do not print API keys, cookies, SYSU credentials, or signed temporary PDF URLs.

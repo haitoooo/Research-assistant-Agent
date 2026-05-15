@@ -309,10 +309,10 @@ def add_manual(root: Path, title: str, url: str | None, doi: str | None, reason:
 
 
 def search(root: Path, query: str, limit: int) -> None:
-    print("SQLite FTS search has moved to LightRAG.")
+    print("SQLite FTS search has moved to RAGAnything.")
     print(
-        "Use: python nanobot\\skills\\paper-ingest\\scripts\\lightrag_rag.py "
-        f"--root {root} query {query!r} --mode hybrid"
+        "Use: python nanobot\\skills\\paper-ingest\\scripts\\raganything_rag.py "
+        f"--root {root} query {query!r} --mode mix"
     )
 
 
@@ -349,7 +349,7 @@ def main() -> int:
     manual.add_argument("--doi")
     manual.add_argument("--reason", default="requires SYSU federated login / institutional access")
 
-    search_cmd = sub.add_parser("search", help="Deprecated. Use lightrag_rag.py query instead.")
+    search_cmd = sub.add_parser("search", help="Deprecated. Use raganything_rag.py query instead.")
     search_cmd.add_argument("query")
     search_cmd.add_argument("--limit", type=int, default=8)
 
