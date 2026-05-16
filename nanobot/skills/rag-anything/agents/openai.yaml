@@ -1,0 +1,4 @@
+interface:
+  display_name: "RAGAnything"
+  short_description: "Build traced paper and code RAG."
+  default_prompt: "Use the RAGAnything paper/code RAG workflow for the requested workspace: index sources, inspect per-request trace, diagnose slow calls, or start the WebUI."

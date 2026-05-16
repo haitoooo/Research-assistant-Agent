@@ -265,6 +265,8 @@ async def process_markdown_source_api(rag, path: Path, source_type: str) -> str:
 def mineru_api_pdf_to_markdown(root: Path, pdf_paths: list[Path], interval: int = 20, timeout: int = 3600) -> None:
     if not pdf_paths:
         return
+    if len(pdf_paths) != 1:
+        raise RuntimeError("MinerU PDF conversion is single-file only. Pass exactly one PDF.")
     os.environ.setdefault("RAGANYTHING_TRACE_FILE", str(root / "raganything_trace.jsonl"))
     try:
         from mineru_pdf_to_md import (
@@ -323,7 +325,7 @@ def mineru_api_pdf_to_markdown(root: Path, pdf_paths: list[Path], interval: int 
             )
             start = time.perf_counter()
             trace_event(root, "mineru.download.start", batch_id=batch_id, result_count=len(results))
-            download_markdown(results, root / "md")
+            download_markdown(results, root / "md", pdf_paths[0].stem)
             trace_event(root, "mineru.download.end", batch_id=batch_id, duration_ms=int((time.perf_counter() - start) * 1000))
             return
         except Exception as exc:
@@ -533,28 +535,45 @@ async def build_raganything(root: Path):
     )
 
 
-def default_sources(root: Path, include_pdf: bool) -> list[tuple[Path, str]]:
+def resolve_pdf_path(root: Path, pdf: Path) -> Path:
+    candidates = []
+    if pdf.is_absolute():
+        candidates.append(pdf)
+    else:
+        candidates.extend([pdf, root / "pdf" / pdf, root / "pdf" / f"{pdf}.pdf"])
+    found = next((candidate for candidate in candidates if candidate.exists() and candidate.is_file()), None)
+    if found is None:
+        raise FileNotFoundError(f"PDF not found: {pdf}")
+    if found.suffix.lower() != ".pdf":
+        raise ValueError(f"Expected a PDF path: {found}")
+    return found
+
+
+def default_sources(root: Path, include_pdf: bool, pdf: Path | None) -> list[tuple[Path, str]]:
     sources: list[tuple[Path, str]] = []
     for directory, source_type in ((root / "md", "paper_md"), (root / "code_md", "code_md")):
         sources.extend((path, source_type) for path in sorted(directory.glob("*.md")) if path.stat().st_size > 0)
-    if include_pdf or not sources:
-        sources.extend((path, "pdf") for path in sorted((root / "pdf").glob("*.pdf")) if path.stat().st_size > 0)
+    if include_pdf:
+        if pdf is None:
+            raise RuntimeError("--include-pdf now requires --pdf <single-pdf>; bulk PDF processing is disabled.")
+        pdf_path = resolve_pdf_path(root, pdf)
+        if pdf_path.stat().st_size > 0:
+            sources.append((pdf_path, "pdf"))
     return sources
 
 
-async def sync(root: Path, include_pdf: bool, force: bool, mineru_interval: int, mineru_timeout: int) -> None:
+async def sync(root: Path, include_pdf: bool, pdf: Path | None, force: bool, mineru_interval: int, mineru_timeout: int) -> None:
     load_env(root / ".env")
-    trace_event(root, "sync.start", include_pdf=include_pdf, force=force, mineru_interval=mineru_interval, mineru_timeout=mineru_timeout)
+    trace_event(root, "sync.start", include_pdf=include_pdf, pdf=str(pdf) if pdf else None, force=force, mineru_interval=mineru_interval, mineru_timeout=mineru_timeout)
     conn = connect(root)
     if include_pdf:
-        pdfs_to_parse = [
-            pdf
-            for pdf in sorted((root / "pdf").glob("*.pdf"))
-            if not (root / "md" / f"{pdf.stem}.md").exists() or (root / "md" / f"{pdf.stem}.md").stat().st_size == 0
-        ]
-        if pdfs_to_parse:
-            mineru_api_pdf_to_markdown(root, pdfs_to_parse, interval=mineru_interval, timeout=mineru_timeout)
-    sources = default_sources(root, include_pdf)
+        if pdf is None:
+            raise RuntimeError("--include-pdf now requires --pdf <single-pdf>; bulk PDF processing is disabled.")
+        pdf_path = resolve_pdf_path(root, pdf)
+        md_path = root / "md" / f"{pdf_path.stem}.md"
+        if not md_path.exists() or md_path.stat().st_size == 0:
+            mineru_api_pdf_to_markdown(root, [pdf_path], interval=mineru_interval, timeout=mineru_timeout)
+    sources = default_sources(root, include_pdf, pdf)
     trace_event(root, "sync.sources", count=len(sources), sources=[{"path": str(path), "type": source_type} for path, source_type in sources])
     if not sources:
         print("no sources found for RAGAnything")
@@ -645,6 +664,7 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sync_cmd = sub.add_parser("sync")
     sync_cmd.add_argument("--include-pdf", action="store_true", help="Also process PDFs directly. Default uses existing md/code_md first.")
+    sync_cmd.add_argument("--pdf", type=Path, help="Single PDF path, filename, or stem to process when --include-pdf is used.")
     sync_cmd.add_argument("--force", action="store_true")
     sync_cmd.add_argument("--mineru-interval", type=int, default=20)
     sync_cmd.add_argument("--mineru-timeout", type=int, default=3600)
@@ -655,7 +675,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "sync":
-            asyncio.run(sync(args.root, args.include_pdf, args.force, args.mineru_interval, args.mineru_timeout))
+            asyncio.run(sync(args.root, args.include_pdf, args.pdf, args.force, args.mineru_interval, args.mineru_timeout))
             return 0
         if args.command == "query":
             asyncio.run(query(args.root, args.question, args.mode))

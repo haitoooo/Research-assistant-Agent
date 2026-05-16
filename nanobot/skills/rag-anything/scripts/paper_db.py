@@ -311,7 +311,7 @@ def add_manual(root: Path, title: str, url: str | None, doi: str | None, reason:
 def search(root: Path, query: str, limit: int) -> None:
     print("SQLite FTS search has moved to RAGAnything.")
     print(
-        "Use: python nanobot\\skills\\paper-ingest\\scripts\\raganything_rag.py "
+        "Use: python nanobot\\skills\\rag-anything\\scripts\\raganything_rag.py "
         f"--root {root} query {query!r} --mode mix"
     )
 
@@ -331,7 +331,7 @@ def stats(root: Path) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Maintain the paper-ingest SQLite/RAG index.")
+    parser = argparse.ArgumentParser(description="Maintain the rag-anything SQLite/RAG index.")
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     sub = parser.add_subparsers(dest="command", required=True)
 

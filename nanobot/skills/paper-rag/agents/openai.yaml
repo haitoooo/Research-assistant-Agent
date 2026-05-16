@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper RAG"
+  short_description: "Fast paper and code RAG flow."
+  default_prompt: "Use the lightweight paper/code RAG workflow: fast index Markdown and source code, optionally enrich paper cards, use VLM only on demand, query or inspect trace for the requested workspace."

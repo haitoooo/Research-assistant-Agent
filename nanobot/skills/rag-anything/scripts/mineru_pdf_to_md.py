@@ -288,11 +288,14 @@ def extract_markdown_and_assets(zip_path: Path, output_dir: Path, stem: str, tar
         print(f"write assets {stem}: {asset_count}", flush=True)
 
 
-def download_markdown(results: list[dict], output_dir: Path) -> None:
+def download_markdown(results: list[dict], output_dir: Path, target_stem: str) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for item in results:
         name = item.get("file_name") or item.get("name") or item.get("data_id") or "result"
         stem = Path(name).stem
+        if stem != target_stem:
+            print(f"skip non-target MinerU result {name}", flush=True)
+            continue
         zip_url = item.get("full_zip_url") or item.get("zip_url") or item.get("result_url")
         md_url = item.get("md_url") or item.get("markdown_url")
         target = output_dir / f"{stem}.md"
@@ -326,23 +329,38 @@ def sync_db(root: Path) -> None:
         print(f"RAGAnything sync skipped/failed with exit code {completed.returncode}", flush=True)
 
 
+def resolve_pdf_path(root: Path, raw_path: Path) -> Path:
+    pdf_dir = root / "pdf"
+    candidates = []
+    if raw_path.is_absolute():
+        candidates.append(raw_path)
+    else:
+        candidates.extend([raw_path, pdf_dir / raw_path, pdf_dir / f"{raw_path}.pdf"])
+    found = next((candidate for candidate in candidates if candidate.exists() and candidate.is_file()), None)
+    if not found:
+        raise FileNotFoundError(f"PDF not found: {raw_path}")
+    if found.suffix.lower() != ".pdf":
+        raise ValueError(f"Expected a PDF path: {found}")
+    return found
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(".nanobot/workspace/articles"))
     parser.add_argument("--interval", type=int, default=20)
     parser.add_argument("--timeout", type=int, default=3600)
     parser.add_argument("--batch-id")
+    parser.add_argument("--pdf", type=Path, required=True, help="Single PDF path, stem, or filename to process. Bulk PDF directory processing is intentionally disabled.")
+    parser.add_argument("--sync-db", action="store_true", help="Run downstream DB/RAG sync after this single MinerU output is downloaded.")
     args = parser.parse_args()
 
     root = args.root
     os.environ.setdefault("RAGANYTHING_TRACE_FILE", str(root / "raganything_trace.jsonl"))
-    pdf_dir = root / "pdf"
     md_dir = root / "md"
     env = load_env(root / ".env")
-    pdf_paths = sorted(pdf_dir.glob("*.pdf"))
-    if not pdf_paths:
-        print(f"No PDF files found in {pdf_dir}", file=sys.stderr)
-        return 1
+    pdf_path = resolve_pdf_path(root, args.pdf)
+    pdf_paths = [pdf_path]
+    target_stem = pdf_path.stem
 
     errors: list[str] = []
     for token in token_candidates(env):
@@ -354,8 +372,9 @@ def main() -> int:
                 print(f"created batch {batch_id} for {len(pdf_paths)} PDFs", flush=True)
                 upload_files(pdf_paths, file_urls)
             results = poll_results(batch_id, token, args.interval, args.timeout)
-            download_markdown(results, md_dir)
-            sync_db(root)
+            download_markdown(results, md_dir, target_stem)
+            if args.sync_db:
+                sync_db(root)
             return 0
         except Exception as exc:
             errors.append(str(exc))
